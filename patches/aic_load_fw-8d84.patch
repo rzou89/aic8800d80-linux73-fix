@@ -1,0 +1,24 @@
+--- a/aic_compat_8800d80.h
++++ b/aic_compat_8800d80.h
+@@ -3,6 +3,7 @@
+ #define USB_DEVICE_ID_AIC_8800D80       0x8D80
+ #define USB_DEVICE_ID_AIC_8800D81       0x8D81
++#define USB_DEVICE_ID_AIC_8800D84       0x8D84
+ 
+ #endif
+--- a/aicwf_usb.c
++++ b/aicwf_usb.c
+@@ -1342,6 +1342,10 @@
+     }else if(pid == USB_DEVICE_ID_AIC_8800D80){
+         usb_dev->chipid = PRODUCT_ID_AIC8800D80;
+         AICWFDBG(LOGINFO, "%s USE AIC8800D80\r\n", __func__);
+         return 0;
++    }else if(pid == USB_DEVICE_ID_AIC_8800D84){
++        usb_dev->chipid = PRODUCT_ID_AIC8800D80;
++        AICWFDBG(LOGINFO, "%s USE AIC8800D84\r\n", __func__);
++        return 0;
+     }else if(pid == USB_DEVICE_ID_AIC_8800D81X2 && vid == USB_VENDOR_ID_AIC_V2){
+@@ -1850,6 +1854,7 @@
+     {USB_DEVICE(USB_VENDOR_ID_AIC, USB_DEVICE_ID_AIC_8800D80)},
++    {USB_DEVICE(USB_VENDOR_ID_AIC, USB_DEVICE_ID_AIC_8800D84)},
+     {USB_DEVICE(USB_VENDOR_ID_AIC, USB_DEVICE_ID_AIC_8800D81)},

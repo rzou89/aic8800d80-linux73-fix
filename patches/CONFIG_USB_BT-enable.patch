@@ -1,0 +1,10 @@
+--- a/Makefile
++++ b/Makefile
+@@ -76,7 +76,7 @@
+ # CONFIG_USB_BT = y for combo (Wi-Fi + Bluetooth)
+ # CONFIG_USB_BT = n for Wi-Fi only
+-CONFIG_USB_BT = n
++CONFIG_USB_BT = y
+ 
+ # CONFIG_COEX = n for BT_ONLY, CONFIG_COEX =y for combo and sw
+ CONFIG_COEX = y
