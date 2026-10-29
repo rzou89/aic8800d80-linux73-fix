@@ -32,48 +32,41 @@ Setiap install driver, wajib power drain total (cabut kabel 30 detik).
 
 Chip USB BT crash. Power drain total (cabut kabel 30 detik) satu-satunya solusi.
 
-## (Khusus KDE) PC tidak bisa sleep setelah driver aktif
+## (Khusus KDE) PC tidak bisa sleep atau layar mati tapi PC tetap menyala
 
-**Ini BUKAN bug dari driver AIC8800.** Ini adalah bug lama dari KDE PowerDevil yang memblokir suspend manual. Masalah ini sering muncul setelah driver Wi-Fi aktif di lingkungan KDE Plasma.
+Setelah driver Wi-Fi aktif, beberapa pengguna KDE Plasma mengalami masalah tidur. Ini **BUKAN bug dari driver AIC8800**, melainkan kombinasi bug dari KDE PowerDevil dan systemd v256+.
 
-### Gejala
-- Klik menu "Sleep" di KDE tapi PC tidak tidur.
-- `systemctl suspend` biasa juga gagal.
-- Sleep **berhasil** jika menggunakan perintah `systemctl suspend --ignore-inhibitors`.
+Ada dua masalah berbeda yang harus diatasi:
 
-### Solusi: Buat Skrip dan Shortcut `Meta+Enter`
+### Masalah 1: PowerDevil memblokir suspend (PC tidak mau tidur)
+KDE PowerDevil terkadang menahan inhibitor `block` saat Anda meminta sleep, sehingga sistem menolak tidur.
 
-Karena menu bawaan KDE bermasalah, kita buat jalan pintas sendiri.
+**Solusi:** Gunakan skrip khusus yang mengabaikan inhibitor.
+1. Buat skrip:
+   ```bash
+   mkdir -p ~/.local/bin
+   cat > ~/.local/bin/sleep-ignore-inhibitors.sh <<'EOF'
+   #!/bin/sh
+   systemctl suspend --ignore-inhibitors
+   EOF
+   chmod +x ~/.local/bin/sleep-ignore-inhibitors.sh
 
-**1. Buat skrip sleep:**
-```bash
-mkdir -p ~/.local/bin
-cat > ~/.local/bin/sleep-ignore-inhibitors.sh <<'EOF'
-#!/bin/sh
-systemctl suspend --ignore-inhibitors
-EOF
-chmod +x ~/.local/bin/sleep-ignore-inhibitors.sh
+2. Pasang di System Settings → Keyboard → Shortcuts → Custom Shortcuts (misal dengan shortcut Meta+Enter) dan arahkan ke skrip tersebut.
 
-2. Pasang shortcut di KDE:
+Masalah 2: Systemd Freeze Hang (Layar mati tapi PC tetap menyala)
 
-    Buka System Settings → Keyboard → Shortcuts.
+Systemd v256+ mencoba membekukan semua proses sebelum tidur. Pada kombinasi GPU Intel Xe + Wi-Fi PCIe tertentu, proses ini macet (hang), membuat layar mati tetapi kipas dan lampu PC tetap menyala.
 
-    Klik Custom Shortcuts → Edit → New → Global Shortcut → Command/URL.
+Solusi: Nonaktifkan pembekuan sesi pengguna di systemd.
+Jalankan perintah:
+bash
 
-    Beri nama "Sleep FIX", isi Command dengan: /home/USERNAME/.local/bin/sleep-ignore-inhibitors.sh (ganti USERNAME dengan nama user Anda).
+sudo systemctl edit systemd-suspend.service
 
-    Pindah ke tab Trigger, klik Add, lalu tekan Meta+Enter.
+Lalu tambahkan baris berikut ke dalam file tersebut:
+ini
 
-    Klik Apply.
+[Service]
+Environment="SYSTEMD_SLEEP_FREEZE_USER_SESSIONS=false"
 
-Sekarang, setiap kali Anda menekan Meta+Enter, PC akan langsung tidur tanpa hambatan.
-
-
----
-
-### 💾 Langkah 3: Simpan dan Upload
-
-1. Simpan file: tekan `Ctrl+O`, lalu `Enter`, lalu `Ctrl+X` untuk keluar.
-2. Jalankan perintah ini satu per satu untuk upload ke GitHub:
-   ```fish
-   git add docs/TROUBLESHOOTING.md
+Simpan, lalu jalankan sudo systemctl daemon-reload. Sekarang sleep seharusnya berfungsi normal.
