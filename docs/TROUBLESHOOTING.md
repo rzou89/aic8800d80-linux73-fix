@@ -32,42 +32,48 @@ Setiap install driver, wajib power drain total (cabut kabel 30 detik).
 
 Chip USB BT crash. Power drain total (cabut kabel 30 detik) satu-satunya solusi.
 
-## Sleep tidak berfungsi (PC tidak bisa suspend)
+## (Khusus KDE) PC tidak bisa sleep setelah driver aktif
 
-Jika PC tidak bisa sleep setelah install driver ini, kemungkinan besar **konfigurasi PowerDevil (KDE) korup**, bukan masalah driver.
+**Ini BUKAN bug dari driver AIC8800.** Ini adalah bug lama dari KDE PowerDevil yang memblokir suspend manual. Masalah ini sering muncul setelah driver Wi-Fi aktif di lingkungan KDE Plasma.
 
 ### Gejala
+- Klik menu "Sleep" di KDE tapi PC tidak tidur.
+- `systemctl suspend` biasa juga gagal.
+- Sleep **berhasil** jika menggunakan perintah `systemctl suspend --ignore-inhibitors`.
 
-- `systemd-inhibit --list` menampilkan PowerDevil dengan `MODE = block`
-- Menu Sleep diklik tapi PC tidak tidur
-- Sleep berhasil kalau PowerDevil dimatikan manual
+### Solusi: Buat Skrip dan Shortcut `Meta+Enter`
 
-### Solusi
+Karena menu bawaan KDE bermasalah, kita buat jalan pintas sendiri.
 
-Reset konfigurasi PowerDevil:
+**1. Buat skrip sleep:**
+```bash
+mkdir -p ~/.local/bin
+cat > ~/.local/bin/sleep-ignore-inhibitors.sh <<'EOF'
+#!/bin/sh
+systemctl suspend --ignore-inhibitors
+EOF
+chmod +x ~/.local/bin/sleep-ignore-inhibitors.sh
 
-    mv ~/.config/powerdevilrc ~/.config/powerdevilrc.bak
-    systemctl --user restart plasma-powerdevil.service
+2. Pasang shortcut di KDE:
 
-Tes suspend dari menu KDE. Jika berhasil, masalah teratasi.
+    Buka System Settings → Keyboard → Shortcuts.
 
-Jika masih gagal, tambahkan workaround delay:
+    Klik Custom Shortcuts → Edit → New → Global Shortcut → Command/URL.
 
-    mkdir -p ~/.config/systemd/user/plasma-powerdevil.service.d
-    cat > ~/.config/systemd/user/plasma-powerdevil.service.d/override.conf <<'EOF'
-    [Service]
-    ExecStartPre=/bin/sleep 3
-    Environment=POWERDEVIL_NO_DDCUTIL=1
-    EOF
-    systemctl --user daemon-reload
-    systemctl --user restart plasma-powerdevil.service
+    Beri nama "Sleep FIX", isi Command dengan: /home/USERNAME/.local/bin/sleep-ignore-inhibitors.sh (ganti USERNAME dengan nama user Anda).
 
-Jika masih gagal juga, nonaktifkan PowerDevil sementara:
+    Pindah ke tab Trigger, klik Add, lalu tekan Meta+Enter.
 
-    systemctl --user disable --now plasma-powerdevil.service
+    Klik Apply.
 
-Suspend akan ditangani `systemd-logind`. Fitur KDE (battery profile, brightness auto) hilang sementara.
+Sekarang, setiap kali Anda menekan Meta+Enter, PC akan langsung tidur tanpa hambatan.
 
-Untuk mengembalikan:
 
-    systemctl --user enable --now plasma-powerdevil.service
+---
+
+### 💾 Langkah 3: Simpan dan Upload
+
+1. Simpan file: tekan `Ctrl+O`, lalu `Enter`, lalu `Ctrl+X` untuk keluar.
+2. Jalankan perintah ini satu per satu untuk upload ke GitHub:
+   ```fish
+   git add docs/TROUBLESHOOTING.md
