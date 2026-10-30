@@ -32,41 +32,24 @@ Setiap install driver, wajib power drain total (cabut kabel 30 detik).
 
 Chip USB BT crash. Power drain total (cabut kabel 30 detik) satu-satunya solusi.
 
-## (Khusus KDE) PC tidak bisa sleep atau layar mati tapi PC tetap menyala
+## Sleep / Wakeup Freeze (PC hang saat tidur atau bangun)
 
-Setelah driver Wi-Fi aktif, beberapa pengguna KDE Plasma mengalami masalah tidur. Ini **BUKAN bug dari driver AIC8800**, melainkan kombinasi bug dari KDE PowerDevil dan systemd v256+.
+**Penyebab:** Driver AIC8800 memiliki kebocoran *wakelock* (`__pm_stay_awake`) yang membuat sistem menolak tidur atau macet (hang) saat driver di-*unload* (`modprobe -r`). Selain itu, driver ini belum memiliki fungsi *resume* PCIe yang sempurna.
 
-Ada dua masalah berbeda yang harus diatasi:
+**Solusi Final:** Matikan fungsi wakelock di dalam *source code* driver menggunakan *patch*.
 
-### Masalah 1: PowerDevil memblokir suspend (PC tidak mau tidur)
-KDE PowerDevil terkadang menahan inhibitor `block` saat Anda meminta sleep, sehingga sistem menolak tidur.
-
-**Solusi:** Gunakan skrip khusus yang mengabaikan inhibitor.
-1. Buat skrip:
+1. Pastikan Anda sudah mengunduh repo ini.
+2. Terapkan patch wakelock:
    ```bash
-   mkdir -p ~/.local/bin
-   cat > ~/.local/bin/sleep-ignore-inhibitors.sh <<'EOF'
-   #!/bin/sh
-   systemctl suspend --ignore-inhibitors
-   EOF
-   chmod +x ~/.local/bin/sleep-ignore-inhibitors.sh
+   patch -d /usr/src/aic8800-6.4.3.0/aic8800_fdrv -p1 < patches/fix-wakelock-hang.patch
 
-2. Pasang di System Settings → Keyboard → Shortcuts → Custom Shortcuts (misal dengan shortcut Meta+Enter) dan arahkan ke skrip tersebut.
+(Jika folder /usr/src/aic8800-6.4.3.0 belum ada, jalankan scripts/install_manual.py terlebih dahulu).
 
-Masalah 2: Systemd Freeze Hang (Layar mati tapi PC tetap menyala)
+    Rebuild driver:
+    bash
 
-Systemd v256+ mencoba membekukan semua proses sebelum tidur. Pada kombinasi GPU Intel Xe + Wi-Fi PCIe tertentu, proses ini macet (hang), membuat layar mati tetapi kipas dan lampu PC tetap menyala.
+    sudo dkms install /usr/src/aic8800-6.4.3.0 -k $(uname -r) --force
 
-Solusi: Nonaktifkan pembekuan sesi pengguna di systemd.
-Jalankan perintah:
-bash
+    Gunakan skrip tidur standar bawaan AUR di /usr/lib/systemd/system-sleep/aic8800d80 (yang berisi perintah modprobe -r dan modprobe).
 
-sudo systemctl edit systemd-suspend.service
-
-Lalu tambahkan baris berikut ke dalam file tersebut:
-ini
-
-[Service]
-Environment="SYSTEMD_SLEEP_FREEZE_USER_SESSIONS=false"
-
-Simpan, lalu jalankan sudo systemctl daemon-reload. Sekarang sleep seharusnya berfungsi normal.
+Catatan: Setelah bangun dari tidur, akan ada jeda sekitar 3 detik sebelum Wi-Fi menyala kembali. Ini normal, karena driver perlu mengunggah ulang file firmware (fmacfw_8800D80_pcie.bin) ke perangkat keras.
