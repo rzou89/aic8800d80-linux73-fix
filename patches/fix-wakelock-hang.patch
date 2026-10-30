@@ -1,0 +1,10 @@
+--- a/aic8800_fdrv/aicwf_pcie.c
++++ b/aic8800_fdrv/aicwf_pcie.c
+@@ -40,7 +40,7 @@
+     spin_lock_bh(&rwnx_hw->pcidev->ws_lock);
+     if(pci_ws != NULL){
+ -       __pm_stay_awake(pci_ws);
+ +       // __pm_stay_awake(pci_ws);
+     }
+     spin_unlock_bh(&rwnx_hw->pcidev->ws_lock);
+ #endif
